@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta http-equiv="expires" content="-1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Internet Hotspot - Login</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Ganti file logo & iklan di folder img/ :
+         img/logo-company.png  -> logo perusahaan Anda
+         img/logo-client.png   -> logo perusahaan client
+         img/ad-1.jpg, img/ad-2.jpg, img/ad-3.jpg (dst) -> gambar iklan carousel
+         Tambah/kurangi slide iklan cukup dengan menambah/menghapus blok
+         <div class="carousel-slide">...</div> di bawah, dot & auto-slide
+         menyesuaikan otomatis.
+
+         UBAH RASIO IKLAN:
+         Tinggal ganti class di <div class="carousel ..." id="adCarousel">
+         pilih salah satu: ratio-16x9 (default) | ratio-4x3 | ratio-1x1 |
+         ratio-3x2 | ratio-9x16 | ratio-2x1
+         Preset-nya ada di css/style.css. Mau rasio lain? tambahkan sendiri
+         di style.css, contoh:
+           .carousel.ratio-21x9{ --ad-ratio: 21/9; --ad-max-h: 300px; }
+         lalu pakai class "ratio-21x9" di sini. -->
+
+    $(if chap-id)
+    <form name="sendin" action="$(link-login-only)" method="post" style="display:none">
+        <input type="hidden" name="username" />
+        <input type="hidden" name="password" />
+        <input type="hidden" name="dst" value="$(link-orig)" />
+        <input type="hidden" name="popup" value="true" />
+    </form>
+
+    <script src="/md5.js"></script>
+    <script>
+        function doLogin() {
+            // Login hanya dengan password: password juga dipakai sebagai username.
+            var pass = document.login.password.value;
+            document.sendin.username.value = pass;
+            document.sendin.password.value = hexMD5('$(chap-id)' + pass + '$(chap-challenge)');
+            document.sendin.submit();
+            return false;
+        }
+    </script>
+    $(endif)
+
+    <div class="ie-fixMinHeight">
+        <div class="main">
+            <div class="wrap animated fadeIn">
+
+                <!-- <div class="signal"><span class="dot"></span></div> -->
+
+                <div class="logo-row">
+                    <img src="img/whusnet.png" alt="Logo Perusahaan" />
+                    <span class="logo-divider"></span>
+                    <img src="img/logo-jatimori.png" alt="Logo Client" />
+                </div>
+
+                <h1>Selamat Datang</h1>
+                <p class="subtitle">Masuk untuk mulai terhubung ke internet</p>
+
+                <!-- ===== Ad Carousel ===== -->
+                <div class="carousel ratio-9x19" id="adCarousel">
+                    <div class="carousel-track" id="carouselTrack">
+                        <div class="carousel-slide"><a href="#" target="_blank" rel="noopener"><img src="img/jatimori1.jpg" alt="Iklan 1" draggable="false" /></a></div>
+                        <!-- <div class="carousel-slide"><a href="#" target="_blank" rel="noopener"><img src="img/ad-2.jpg" alt="Iklan 2" draggable="false" /></a></div> -->
+                        <!-- <div class="carousel-slide"><a href="#" target="_blank" rel="noopener"><img src="img/ad-3.jpg" alt="Iklan 3" draggable="false" /></a></div> -->
+                        <!-- <div class="carousel-slide"><a href="#" target="_blank" rel="noopener"><img src="img/ad-4.jpg" alt="Iklan 3" draggable="false" /></a></div> -->
+                    </div>
+                    <button type="button" class="carousel-nav prev" aria-label="Sebelumnya">&#8249;</button>
+                    <button type="button" class="carousel-nav next" aria-label="Berikutnya">&#8250;</button>
+                    <div class="carousel-dots" id="carouselDots"></div>
+                </div>
+
+                <form name="login" action="$(link-login-only)" method="post" $(if chap-id) onSubmit="return doLogin()" $(endif)>
+                    <input type="hidden" name="dst" value="$(link-orig)" />
+                    <input type="hidden" name="popup" value="true" />
+                    $(if chap-id == "")
+                    <!-- Tanpa CHAP: username tetap dikirim, disamakan dengan password -->
+                    <input type="hidden" name="username" value="" id="hiddenUsername" />
+                    $(endif)
+
+                    <p class="info $(if error)alert$(endif)">
+                        $(if error == "")Masukkan password / kode voucher Anda untuk terhubung$(endif)
+                        $(if error)$(error)$(endif)
+                    </p>
+
+                    <label>
+                        <img class="ico" src="img/password.svg" alt="#" />
+                        <input name="password" type="password" placeholder="Password / Kode Voucher" required
+                            $(if chap-id == "") oninput="document.getElementById('hiddenUsername').value=this.value" $(endif) />
+                    </label>
+
+                    <input type="submit" value="Masuk" />
+                </form>
+
+                <p class="info bt">Info Pemasangan Whusnet Wifi 081809130009</p>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var track = document.getElementById('carouselTrack');
+            var dotsWrap = document.getElementById('carouselDots');
+            var carousel = document.getElementById('adCarousel');
+            var slides = track.children.length;
+            var index = 0;
+            var AUTO_MS = 4500;
+            var RESUME_MS = 6000;
+            var timer = null;
+            var resumeTimer = null;
+
+            // build dots
+            for (var i = 0; i < slides; i++) {
+                var b = document.createElement('button');
+                if (i === 0) b.className = 'active';
+                b.setAttribute('aria-label', 'Slide ' + (i + 1));
+                (function (idx) {
+                    b.addEventListener('click', function () { goTo(idx); restartAuto(true); });
+                })(i);
+                dotsWrap.appendChild(b);
+            }
+            var dots = dotsWrap.children;
+
+            function render() {
+                track.style.transform = 'translateX(-' + (index * 100) + '%)';
+                for (var i = 0; i < dots.length; i++) {
+                    dots[i].className = (i === index) ? 'active' : '';
+                }
+            }
+
+            function goTo(i) {
+                index = (i + slides) % slides;
+                render();
+            }
+
+            function next() { goTo(index + 1); }
+            function prev() { goTo(index - 1); }
+
+            function startAuto() {
+                stopAuto();
+                timer = setInterval(next, AUTO_MS);
+            }
+            function stopAuto() {
+                if (timer) clearInterval(timer);
+                timer = null;
+            }
+            function restartAuto(delay) {
+                stopAuto();
+                if (resumeTimer) clearTimeout(resumeTimer);
+                if (delay) {
+                    resumeTimer = setTimeout(startAuto, RESUME_MS);
+                } else {
+                    startAuto();
+                }
+            }
+
+            document.querySelector('.carousel-nav.prev').addEventListener('click', function () { prev(); restartAuto(true); });
+            document.querySelector('.carousel-nav.next').addEventListener('click', function () { next(); restartAuto(true); });
+
+            // touch / pointer swipe
+            var startX = 0, deltaX = 0, dragging = false;
+
+            carousel.addEventListener('touchstart', function (e) {
+                startX = e.touches[0].clientX;
+                dragging = true;
+                stopAuto();
+            }, { passive: true });
+
+            carousel.addEventListener('touchmove', function (e) {
+                if (!dragging) return;
+                deltaX = e.touches[0].clientX - startX;
+            }, { passive: true });
+
+            carousel.addEventListener('touchend', function () {
+                if (!dragging) return;
+                dragging = false;
+                if (deltaX > 40) prev();
+                else if (deltaX < -40) next();
+                deltaX = 0;
+                restartAuto(true);
+            });
+
+            // mouse drag (desktop)
+            carousel.addEventListener('mousedown', function (e) {
+                startX = e.clientX;
+                dragging = true;
+                stopAuto();
+            });
+            window.addEventListener('mousemove', function (e) {
+                if (!dragging) return;
+                deltaX = e.clientX - startX;
+            });
+            window.addEventListener('mouseup', function () {
+                if (!dragging) return;
+                dragging = false;
+                if (deltaX > 40) prev();
+                else if (deltaX < -40) next();
+                deltaX = 0;
+                restartAuto(true);
+            });
+
+            render();
+            startAuto();
+        })();
+    </script>
+
+</body>
+
+</html>

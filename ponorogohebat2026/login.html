@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta http-equiv="expires" content="-1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Internet Hotspot - Login</title>
+    <link rel="stylesheet" href="css/style.css?v=3">
+</head>
+
+<body>
+
+    <!-- Ganti file logo & iklan di folder img/ :
+         img/logo-company.png  -> logo perusahaan Anda
+         img/logo-client.png   -> logo perusahaan client
+         img/ad-1.jpg, img/ad-2.jpg, img/ad-3.jpg (dst) -> gambar iklan carousel
+         Tambah/kurangi slide iklan cukup dengan menambah/menghapus blok
+         <div class="carousel-slide">...</div> di bawah, dot & auto-slide
+         menyesuaikan otomatis.
+
+         UBAH RASIO IKLAN:
+         Tinggal ganti class di <div class="carousel ..." id="adCarousel">
+         pilih salah satu: ratio-16x9 (default) | ratio-4x3 | ratio-1x1 |
+         ratio-3x2 | ratio-9x16 | ratio-2x1
+         Preset-nya ada di css/style.css. Mau rasio lain? tambahkan sendiri
+         di style.css, contoh:
+           .carousel.ratio-21x9{ --ad-ratio: 21/9; --ad-max-h: 300px; }
+         lalu pakai class "ratio-21x9" di sini. -->
+
+    <div class="ie-fixMinHeight">
+        <div class="main">
+            <div class="wrap animated fadeIn">
+
+                <!-- <div class="signal"><span class="dot"></span></div> -->
+
+                <div class="logo-row">
+                    <img src="img/whusnet.png" alt="Logo Perusahaan" />
+                    <span class="logo-divider"></span>
+                    <img src="img/logowbtr.png" alt="Logo Client" />
+                </div>
+
+                <h1>Selamat Datang , Runners!!</h1>
+                <p class="subtitle"></p>
+
+                <!-- ===== Ad Carousel ===== -->
+                <div class="carousel ratio-3x4" id="adCarousel">
+                    <div class="carousel-track" id="carouselTrack">
+                        <div class="carousel-slide"><a href="#" target="_blank" rel="noopener"><img src="img/bannerwbtr1.png" alt="pict 1" draggable="false" /></a></div>
+                        <div class="carousel-slide"><a href="#" target="_blank" rel="noopener"><img src="img/bannerwbtr2.png" alt="pict 2" draggable="false" /></a></div>
+                        <div class="carousel-slide"><a href="#" target="_blank" rel="noopener"><img src="img/bannerwbtr3.png" alt="pict 3" draggable="false" /></a></div>
+                        <div class="carousel-slide"><a href="#" target="_blank" rel="noopener"><img src="img/bannerwbtr4.png" alt="pict 4" draggable="false" /></a></div>
+                    </div>
+                    <div class="carousel-dots" id="carouselDots"></div>
+                </div>
+
+                <!-- Tanpa input data diri. Form di bawah HANYA berisi field hidden
+                     (wajib agar MikroTik bisa memproses login trial: username T-<MAC>).
+                     Tombol CONNECT aktif setelah countdown 7 detik selesai. -->
+                <p class="info $(if error)alert$(endif)">
+                    $(if error == "")Mohon Tunggu Sebentar Sebelum Terhubung ke Internet$(endif)
+                    $(if error)$(error)$(endif)
+                </p>
+
+                <form name="trial" id="trialForm" action="$(link-login-only)" method="post" autocomplete="off">
+                    <input type="hidden" name="username" value="T-$(mac)" />
+                    <input type="hidden" name="dst" value="$(link-orig)" />
+                    <input type="hidden" name="popup" value="true" />
+
+                    <button type="submit" id="trialBtn" class="btn" disabled><span id="btnText" class="btn-text">Keep Running</span></button>
+                    <div class="countdown-bar" aria-hidden="true"><span id="countdownFill"></span></div>
+                </form>
+
+                <p class="info bt">*syarat dan ketentuan berlaku</p>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var SECONDS = 10;                       // lama countdown (detik)
+            var f = document.getElementById('trialForm');
+            var b = document.getElementById('trialBtn');
+            var txt = document.getElementById('btnText');
+            var fill = document.getElementById('countdownFill');
+            var MESSAGES = [                       // tampil bergantian selama countdown
+                'Keep Running',
+                'WBTR 2026',
+                '#elevateyourjurney'
+            ];
+            var start = Date.now();
+
+            // animasi progress bar (CSS transition selama SECONDS detik)
+            fill.style.transitionDuration = SECONDS + 's';
+            setTimeout(function () { fill.style.width = '100%'; }, 50);
+
+            var FADE_MS = 600;                     // durasi transisi antar kalimat
+            var shown = 0;
+
+            // ganti teks dengan efek fade (keluar -> ganti -> masuk)
+            function swap(text) {
+                txt.className = 'btn-text out';
+                setTimeout(function () {
+                    txt.textContent = text;
+                    txt.className = 'btn-text';
+                }, FADE_MS);
+            }
+
+            var iv = setInterval(function () {
+                var elapsed = Date.now() - start;
+                if (elapsed < SECONDS * 1000) {
+                    var i = Math.min(Math.floor(elapsed / (SECONDS * 1000 / MESSAGES.length)), MESSAGES.length - 1);
+                    if (i !== shown) { shown = i; swap(MESSAGES[i]); }
+                } else {
+                    clearInterval(iv);
+                    swap('CONNECT');
+                    setTimeout(function () { b.disabled = false; }, FADE_MS);
+                }
+            }, 100);
+
+            // cegah submit sebelum countdown selesai
+            f.addEventListener('submit', function (e) {
+                if (b.disabled) e.preventDefault();
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            // Carousel: geser (swipe) dikendalikan JS sendiri supaya jalan di semua browser hotspot.
+            // Gambar mengikuti jari, loop tanpa putus, auto-slide tetap jalan.
+            var carousel = document.getElementById('adCarousel');
+            var track = document.getElementById('carouselTrack');
+            var dotsWrap = document.getElementById('carouselDots');
+            var slideEls = [].slice.call(track.children);
+            var n = slideEls.length;
+            var index = 0;
+            var AUTO_MS = 4500;      // jeda auto-slide
+            var RESUME_MS = 6000;    // auto-slide lanjut setelah user berhenti menyentuh
+            var timer = null, resumeTimer = null;
+            var prevRel = [];
+
+            // dots
+            for (var i = 0; i < n; i++) {
+                var d = document.createElement('button');
+                d.type = 'button';
+                d.setAttribute('aria-label', 'Slide ' + (i + 1));
+                (function (idx) {
+                    d.addEventListener('click', function () { goTo(idx); pauseAuto(); });
+                })(i);
+                dotsWrap.appendChild(d);
+            }
+            var dots = dotsWrap.children;
+
+            function mod(a, m) { return ((a % m) + m) % m; }
+
+            // posisi tiap slide relatif terhadap slide aktif (-2..1), dx = geseran jari (px)
+            function render(dx) {
+                dx = dx || 0;
+                var half = Math.floor(n / 2);
+                for (var i = 0; i < n; i++) {
+                    var rel = mod(i - index + half, n) - half;
+                    var el = slideEls[i];
+                    // slide yang "melompat" dari ujung kiri ke kanan (tak terlihat) tidak dianimasikan
+                    el.style.transition = (prevRel[i] !== undefined && Math.abs(rel - prevRel[i]) > 1) ? 'none' : '';
+                    el.style.transform = 'translate3d(calc(' + (rel * 100) + '% + ' + dx + 'px),0,0)';
+                    prevRel[i] = rel;
+                }
+                for (var k = 0; k < dots.length; k++) dots[k].className = (k === index) ? 'active' : '';
+            }
+
+            function goTo(i) { index = mod(i, n); render(0); }
+
+            // auto-slide
+            function startAuto() { stopAuto(); if (n > 1) timer = setInterval(function () { goTo(index + 1); }, AUTO_MS); }
+            function stopAuto() { if (timer) clearInterval(timer); timer = null; }
+            function pauseAuto() {
+                stopAuto();
+                if (resumeTimer) clearTimeout(resumeTimer);
+                resumeTimer = setTimeout(startAuto, RESUME_MS);
+            }
+
+            // ---- gesture: sentuh (HP) & mouse (desktop) ----
+            var active = false, locked = null, sx = 0, sy = 0, dx = 0, st = 0, moved = false;
+
+            function begin(x, y) {
+                active = true; locked = null; moved = false;
+                sx = x; sy = y; dx = 0; st = Date.now();
+                stopAuto();
+            }
+            // return true bila gerakan horizontal (kita yang handle)
+            function move(x, y) {
+                if (!active) return false;
+                var ddx = x - sx, ddy = y - sy;
+                if (locked === null) {
+                    if (Math.abs(ddx) < 6 && Math.abs(ddy) < 6) return false;
+                    locked = Math.abs(ddx) > Math.abs(ddy) ? 'x' : 'y';
+                    if (locked === 'x') carousel.classList.add('dragging');
+                }
+                if (locked !== 'x') return false;
+                moved = true;
+                dx = ddx;
+                render(dx);
+                return true;
+            }
+            function end() {
+                if (!active) return;
+                active = false;
+                carousel.classList.remove('dragging');
+                if (locked === 'x') {
+                    var w = carousel.clientWidth || 1;
+                    var v = dx / Math.max(1, Date.now() - st);          // px per ms
+                    var step = (Math.abs(dx) > w * 0.18 || Math.abs(v) > 0.35) ? (dx < 0 ? 1 : -1) : 0;
+                    index = mod(index + step, n);
+                    render(0);
+                }
+                locked = null;
+                pauseAuto();
+            }
+
+            if (n > 1) {
+                carousel.addEventListener('touchstart', function (e) {
+                    if (e.touches.length !== 1) return;
+                    begin(e.touches[0].clientX, e.touches[0].clientY);
+                }, { passive: true });
+                carousel.addEventListener('touchmove', function (e) {
+                    if (move(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault();
+                }, { passive: false });
+                carousel.addEventListener('touchend', end);
+                carousel.addEventListener('touchcancel', end);
+
+                carousel.addEventListener('mousedown', function (e) { if (e.button === 0) { begin(e.clientX, e.clientY); e.preventDefault(); } });
+                window.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY); });
+                window.addEventListener('mouseup', end);
+            }
+
+            // jangan buka link iklan kalau user baru saja menggeser
+            carousel.addEventListener('click', function (e) {
+                if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; }
+            }, true);
+
+            // render awal tanpa animasi
+            carousel.classList.add('dragging');
+            render(0);
+            setTimeout(function () { carousel.classList.remove('dragging'); }, 60);
+            startAuto();
+        })();
+    </script>
+
+</body>
+
+</html>
